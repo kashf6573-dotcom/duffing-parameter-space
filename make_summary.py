@@ -33,7 +33,7 @@ def row(path):
         "gamma": float(z["gamma"]),
         "G_min": float(gmin),
         "FD_headline": fd["FD_headline"],
-        "FD_unc": fd["FD_unc"],
+        "FD_window_halfrange": fd["FD_window_halfrange"],
         "FD_two_sided": fd["FD_two_sided"],
         "FD_one_sided_eps1": fd["FD_one_sided_eps1"],
         "n_boundary_px": fd["n_boundary_px"],
@@ -49,7 +49,7 @@ def main():
     if not paths:
         raise SystemExit(f"no files matching {PATTERN}")
     rows = sorted((row(p) for p in paths), key=lambda r: r["gamma"])
-    fields = ["gamma", "G_min", "FD_headline", "FD_unc", "FD_two_sided",
+    fields = ["gamma", "G_min", "FD_headline", "FD_window_halfrange", "FD_two_sided",
               "FD_one_sided_eps1", "n_boundary_px", "pct_switching", "pct_reverting",
               "pct_vacillating", "pct_intrawell"]
     with open(OUT, "w", newline="") as fh:
@@ -60,7 +60,7 @@ def main():
                 "gamma": f"{r['gamma']:g}",
                 "G_min": f"{r['G_min']:.6f}",
                 "FD_headline": f"{r['FD_headline']:.4f}",
-                "FD_unc": f"{r['FD_unc']:.4f}",
+                "FD_window_halfrange": f"{r['FD_window_halfrange']:.4f}",
                 "FD_two_sided": f"{r['FD_two_sided']:.4f}",
                 "FD_one_sided_eps1": f"{r['FD_one_sided_eps1']:.4f}",
                 "n_boundary_px": r["n_boundary_px"],
@@ -72,7 +72,7 @@ def main():
     print(f"wrote {OUT} ({len(rows)} rows)")
     for r in rows:
         print(f"  gamma={r['gamma']:<6g} G_min={r['G_min']:.3f}  "
-              f"FD={r['FD_headline']:.3f} +/- {r['FD_unc']:.3f}")
+              f"FD={r['FD_headline']:.3f} +/- {r['FD_window_halfrange']:.3f}")
 
 
 if __name__ == "__main__":

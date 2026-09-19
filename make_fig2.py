@@ -27,7 +27,7 @@ def main():
     zoom = sorted(load("results/zoom/fd_estimators_zoom.csv"), key=lambda r: r["gamma"])
     g = [r["gamma"] for r in full]
 
-    fig, ax = plt.subplots(figsize=(9.6, 6.0), dpi=200)
+    fig, ax = plt.subplots(figsize=(10.0, 6.6), dpi=200)
     fig.patch.set_facecolor(SURFACE)
     ax.set_facecolor(SURFACE)
 
@@ -50,18 +50,24 @@ def main():
             mec=SURFACE, mew=1.5, zorder=4, label="two-sided, ε ≥ 1")
     ax.plot(g, [r["FD_one_sided_eps1"] for r in full], "-o", color=S3, lw=2, ms=8,
             mec=SURFACE, mew=1.5, zorder=4, label="one-sided, ε ≥ 1")
-    ax.errorbar(g, [r["FD_headline"] for r in full], yerr=[r["FD_unc"] for r in full],
+    ax.errorbar(g, [r["FD_headline"] for r in full], yerr=[r["FD_window_halfrange"] for r in full],
                 fmt="-o", color=S1, lw=2.4, ms=9, mec=SURFACE, mew=1.5,
                 ecolor=S1, elinewidth=1.6, capsize=5, capthick=1.6, zorder=5,
-                label="headline: one-sided, ε ≥ 2")
+                label="headline: one-sided, ε ≥ 2  (error bars: fit-window sensitivity)")
 
     # zoom runs, offset so they do not sit on top of the full-range markers
     zx = [r["gamma"] + 0.012 for r in zoom]
-    ax.errorbar(zx, [r["FD_headline"] for r in zoom], yerr=[r["FD_unc"] for r in zoom],
+    ax.errorbar(zx, [r["FD_headline"] for r in zoom], yerr=[r["FD_window_halfrange"] for r in zoom],
                 fmt="D", color=SURFACE, mec=S1, mew=2.2, ms=9,
                 ecolor=S1, elinewidth=1.6, capsize=5, capthick=1.6, zorder=6,
                 label="headline, zoomed window")
     # the hollow diamond plus the legend entry carries the identity; no per-point text
+
+    # published value for gamma = 0.07, offset in x because it coincides with ours
+    ax.plot([0.07 - 0.016], [1.29], marker="s", ms=10, mfc="none", mec=INK, mew=1.8,
+            ls="none", zorder=7, label="Hasan et al. (2023)")
+    ax.annotate("paper: 1.29", (0.07 - 0.016, 1.29), textcoords="offset points",
+                xytext=(-10, 0), ha="right", va="center", fontsize=9, color=INK, zorder=7)
 
     # direct labels (relief rule: aqua is under 3:1 on this surface)
     for r, col, txt, dy in ((full[-1], S1, "one-sided, ε≥2", 16),
@@ -75,7 +81,7 @@ def main():
     ax.set_ylabel("box-counting dimension  FD", color=INK, fontsize=11)
     ax.set_title("Fractal dimension of the inter-well boundary depends on the estimator\n"
                  "as much as on damping", color=INK, fontsize=12.5, pad=12, loc="left")
-    ax.set_xlim(-0.022, 0.515)
+    ax.set_xlim(-0.055, 0.515)
     ax.set_ylim(0.95, 1.42)
     ax.set_xticks(g)
     ax.set_xticklabels([f"{v:g}" for v in g])
@@ -89,16 +95,15 @@ def main():
     ax.set_zorder(axb.get_zorder() + 1)
     ax.patch.set_visible(False)
 
-    leg = ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.115), ncol=4,
-                    fontsize=9, frameon=False)
+    handles, labels = ax.get_legend_handles_labels()
+    leg = fig.legend(handles, labels, loc="lower center", bbox_to_anchor=(0.5, 0.125),
+                     ncol=2, fontsize=9, frameon=False)
     for t in leg.get_texts():
         t.set_color(INK2)
 
-    fig.text(0.013, 0.015, "Bars show how much boundary there is to measure: the "
-             "γ = 0.25 and 0.30 full-range grids resolve few pixels, which is why "
-             "their error bars are wide.",
-             fontsize=8.5, color=INK3)
-    fig.tight_layout(rect=(0, 0.10, 1, 1))
+    fig.text(0.013, 0.018, "Error bars are fit-window sensitivity (half-range over contiguous fit windows), not a statistical uncertainty.\nGrey bars show how much boundary there is to measure: the γ = 0.25 and 0.30 full-range grids resolve few pixels, which is why\ntheir fit-window sensitivity is largest.",
+             fontsize=8.5, color=INK3, linespacing=1.5)
+    fig.subplots_adjust(left=0.085, right=0.905, top=0.865, bottom=0.295)
     os.makedirs("figures", exist_ok=True)
     fig.savefig(OUT, facecolor=SURFACE)
     print("wrote", OUT)

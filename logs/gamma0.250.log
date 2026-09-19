@@ -1,8 +1,0 @@
-sweep: 256x256 points, 500 cycles, gamma=0.25, backend=numba: 185.2 s
-  intra-well    92.0 %
-  switching      1.4 %
-  reverting      1.3 %
-  vacillating    5.2 %
-box-counting dimension of inter/intra boundary: FD = 1.180
-minimum G with inter-well behaviour (tongue tip): G_min = 0.203
-wrote results/duffing_gamma0.250_n256.png

@@ -7,7 +7,7 @@ Headline estimator: one-sided boundary, fit over 2 <= eps <= n/4.  The one-sided
 mask avoids the factor-of-two inflation of the two-sided mask, and dropping
 eps = 1 avoids the saturation of a 1-pixel-thick set at the finest box size.
 
-Uncertainty: the headline slope is refit over every contiguous window of >= 4
+Fit-window sensitivity: the headline slope is refit over every contiguous window of >= 4
 box sizes inside the fit range; FD is reported as mean +/- half-range over those
 windows, which measures how much the answer depends on where the scaling window
 is placed.
@@ -59,7 +59,7 @@ def analyse(path, boundary="one-sided", fit_min_eps=2):
     return {
         "gamma": float(z["gamma"]),
         "FD_headline": mean,
-        "FD_unc": unc,
+        "FD_window_halfrange": unc,
         "FD_fullrange": float(fd),
         "FD_two_sided": float(fd_two),
         "FD_one_sided_eps1": float(fd_one1),
@@ -84,7 +84,7 @@ def main():
     rows = sorted((analyse(p, a.boundary, a.fit_min_eps) for p in paths),
                   key=lambda r: (r["gamma"], r["path"]))
 
-    fields = ["gamma", "FD_headline", "FD_unc", "FD_fullrange", "FD_two_sided",
+    fields = ["gamma", "FD_headline", "FD_window_halfrange", "FD_fullrange", "FD_two_sided",
               "FD_one_sided_eps1", "n_boundary_px", "n_boundary_px_two_sided", "n_windows"]
     os.makedirs(os.path.dirname(a.out) or ".", exist_ok=True)
     with open(a.out, "w", newline="") as fh:
@@ -100,7 +100,7 @@ def main():
     print(hdr)
     print("-" * len(hdr))
     for r in rows:
-        print(f"{r['gamma']:>7g} | {r['FD_headline']:>9.4f} +/- {r['FD_unc']:<5.4f} | "
+        print(f"{r['gamma']:>7g} | {r['FD_headline']:>9.4f} +/- {r['FD_window_halfrange']:<5.4f} | "
               f"{r['FD_two_sided']:>8.4f} {r['FD_one_sided_eps1']:>8.4f} | "
               f"{r['n_boundary_px']:>6d} {r['n_boundary_px_two_sided']:>6d}")
     print(f"\nwrote {a.out}")

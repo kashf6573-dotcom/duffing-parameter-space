@@ -1,10 +1,11 @@
-# Fractal patterns in the parameter space of a bistable Duffing oscillator
-
-A reproduction of the forcing-amplitude / driving-frequency parameter-space map in
+# Reproduction: Fractal patterns in the parameter space of a bistable Duffing oscillator (Hasan et al., PRE 2023)
 
 > M. N. Hasan, T. E. Greenwood, R. G. Parker, Y. L. Kong, P. Wang,
 > *Fractal patterns in the parameter space of a bistable Duffing oscillator*,
 > Phys. Rev. E **108**, L022201 (2023); arXiv:2301.13113.
+
+Independent reproduction by Galib Muhammad Kassaf (Islamic University of
+Technology, Bangladesh), September 2026. Not affiliated with the authors.
 
 Governing equation (their Eq. 2, `mu = 1`):
 
@@ -19,14 +20,18 @@ Protocol, unchanged from the paper: fixed-step RK4, 500 forcing cycles, the last
 
 ## Results
 
-`FD` is the box-counting dimension of the inter-well / intra-well boundary.
-The headline estimator is **one-sided boundary, fit over `2 <= eps <= n/4`**;
-the uncertainty is the half-range over every contiguous fit window of >= 4 box
-sizes. The last two FD columns are disclosure, not alternatives — see
-[Estimator sensitivity](#estimator-sensitivity).
+![Category maps for five dampings](figures/fig1_gamma_panels.png)
 
-| gamma | G_min | **FD (headline)** | FD two-sided, eps>=1 | FD one-sided, eps>=1 | boundary px | switching | reverting | vacillating | intra-well |
-|------:|------:|:-----------------:|---------------------:|---------------------:|------------:|----------:|----------:|------------:|-----------:|
+`FD` is the box-counting dimension of the inter-well / intra-well boundary.
+The headline estimator is **one-sided boundary, fit over `2 <= eps <= n/4`**.
+The quoted `±` is **fit-window sensitivity (half-range)** — the half-range of the
+slope over every contiguous fit window of >= 4 box sizes. It measures how much the
+answer depends on where the scaling window is placed; it is **not** a statistical
+uncertainty and carries no confidence level. The last two FD columns are
+disclosure, not alternatives — see [Estimator sensitivity](#estimator-sensitivity).
+
+| gamma | G_min | **FD (headline)** ± fit-window sensitivity | FD two-sided, eps>=1 | FD one-sided, eps>=1 | boundary px | switching | reverting | vacillating | intra-well |
+|------:|------:|:------------------------------------------:|---------------------:|---------------------:|------------:|----------:|----------:|------------:|-----------:|
 | 0.001 | 0.0364 | 1.269 ± 0.034 | 1.322 | 1.196 | 1523 | 1.28% | 1.31% | 44.63% | 52.78% |
 | 0.07  | 0.0893 | 1.290 ± 0.014 | 1.337 | 1.231 | 1208 | 6.76% | 6.80% | 15.78% | 70.66% |
 | 0.15  | 0.1391 | 1.264 ± 0.020 | 1.320 | 1.216 |  864 | 3.92% | 3.75% | 10.53% | 81.81% |
@@ -35,20 +40,71 @@ sizes. The last two FD columns are disclosure, not alternatives — see
 
 Zoom runs, 256 x 256 concentrated on the region that actually contains boundary:
 
-| gamma | window | **FD (headline)** | boundary px (one-sided / two-sided) |
-|------:|--------|:-----------------:|------------------------------------:|
+| gamma | window | **FD (headline)** ± fit-window sensitivity | boundary px (one-sided / two-sided) |
+|------:|--------|:------------------------------------------:|------------------------------------:|
 | 0.25 | `Omega` 1.0–1.6, `G` 0.18–0.30 | 1.125 ± 0.026 | 638 / 1255 |
 | 0.30 | `Omega` 1.0–1.6, `G` 0.21–0.30 | 1.214 ± 0.039 | 501 / 995 |
 
 ![FD vs gamma](figures/fig2_fd_vs_gamma.png)
 
+*Zoom-window values sample the boundary at a finer parameter scale than the
+full-range values and are not directly comparable across gamma.*
+
 At full range, `FD(0.30) - FD(0.25) = 0.079` against combined half-ranges of
-0.183 — the ordering is **not** resolved. The zoom runs roughly double the
-resolved boundary and shrink the uncertainties: the gap becomes 0.090 against
-combined half-ranges of 0.065, so `FD(0.30) > FD(0.25)` **is** resolved there.
-The full-range grids for these two gammas spend most of their pixels on
+0.183 — the ordering is **not** resolved. Within the zoom runs the gap is 0.090
+against combined half-ranges of 0.065, so `FD(0.30) > FD(0.25)` **is** resolved
+there. The full-range grids for these two gammas spend most of their pixels on
 featureless intra-well space; they under-resolve the boundary rather than
 measuring a lower dimension.
+
+## Physical reading
+
+**The static threshold is 0.385.** The potential is `V(u) = -u^2/2 + u^4/4`, so the
+restoring force is `u - u^3`, which peaks at `u = 1/sqrt(3)`. A quasi-static load
+must exceed
+
+```
+G_static = 2/(3*sqrt(3)) = 0.3849
+```
+
+to push the mass over the hilltop at `u = 0` at all.
+
+**Harmonic forcing beats it by a factor of four.** At `gamma = 0.07` inter-well
+motion first appears at `G_min = 0.089`, which is **23% of the static threshold**.
+Driving the oscillator near resonance lets it accumulate energy over many cycles
+instead of paying the full barrier in one push. The ratio grows with damping —
+9.4% at `gamma = 0.001`, 23.2% at 0.07, 36.1% at 0.15, 52.6% at 0.25, 60.9% at
+0.30 — because dissipation removes the energy that accumulation supplies.
+
+**The threshold is linear in damping.** Least squares over the five runs:
+
+```
+G_min = 0.0395 + 0.654*gamma        R^2 = 0.9987
+```
+
+Residuals (`G` grid spacing is 0.00106, so one grid row = 0.0011):
+
+| gamma | G_min | fit | residual |
+|------:|------:|----:|---------:|
+| 0.001 | 0.0364 | 0.0401 | −0.0038 |
+| 0.07  | 0.0893 | 0.0853 | +0.0040 |
+| 0.15  | 0.1391 | 0.1376 | +0.0015 |
+| 0.25  | 0.2026 | 0.2030 | −0.0004 |
+| 0.30  | 0.2344 | 0.2357 | −0.0013 |
+
+rms residual 0.0026, max |residual| 0.0040 — about 2.5 and 3.8 grid rows. The
+residuals are not pure discretisation noise, but they are small, and the sign
+pattern (− + + − −) is what a mild convexity in `G_min(gamma)` would produce.
+
+**The intercept is a property of the protocol, not physics.** A linear
+extrapolation to `gamma = 0` predicts `G_min = 0.0395`. In the undamped limit the
+escape threshold is set by nonlinear resonance rather than dissipation, and
+KAM-type confinement means an arbitrarily small `G` need not escape at all. Within
+a 500-cycle window the intercept is a property of the protocol; no zero-damping
+limit is claimed. Crossings that would first occur at cycle 10 000 are not seen at
+all, so the fit describes the five sampled dampings and should not be extrapolated
+past them. See the [`gamma = 0.001` caveat](#caveat-the-gamma--0001-row), where the
+finite window is not a distant limit but the actual operating regime.
 
 ## Estimator sensitivity
 
@@ -94,7 +150,7 @@ prediction. Only its aggregate fractions are meaningful, and those are stable to
 
 *Hilltop crossing is converged.* Whether the trajectory ever passes `u = 0` is
 insensitive to step size — 3 pixels in 16384. `G_min` shifts by 0.002126, which
-is exactly one grid row, the smallest representable change.
+is exactly one grid row at `n = 128`, the smallest representable change.
 
 *FD is computed on the converged quantity.* The box count runs on the
 inter-well / intra-well boundary, not on the switching/reverting interface, so
@@ -141,32 +197,53 @@ for a 256 x 256 / 500-cycle sweep) and is **off by default**; pass `--backend nu
 
 ```bash
 python3 -m venv .venv && .venv/bin/pip install numpy matplotlib numba
-
-# one parameter-space map
-.venv/bin/python duffing_parameter_space.py --gamma 0.07 --backend numba
-
-# a zoomed window
-.venv/bin/python duffing_parameter_space.py --gamma 0.25 --backend numba \
-    --omega 1.0 1.6 --G 0.18 0.30 --out results/zoom/g025.png
-
-# FD under the headline and disclosure estimators (read-only, from the .npz files)
-.venv/bin/python fd_estimators.py
-.venv/bin/python fd_estimators.py --boundary two-sided --fit-min-eps 1
-
-.venv/bin/python make_summary.py    # -> results/summary.csv
-.venv/bin/python make_fig2.py       # -> figures/fig2_fd_vs_gamma.png
 ```
 
+The `.npz` grids are not tracked in git — regenerate them with the sweeps below
+(~3 min each with numba), then rebuild the CSVs and figures.
+
+```bash
+# the five full-range sweeps
+for g in 0.001 0.070 0.150 0.250 0.300; do
+    .venv/bin/python duffing_parameter_space.py --gamma $g --backend numba \
+        --out results/duffing_gamma${g}_n256.png
+done
+
+# the two zoom runs
+.venv/bin/python duffing_parameter_space.py --gamma 0.250 --backend numba \
+    --omega 1.0 1.6 --G 0.18 0.30 --out results/zoom/duffing_gamma0.250_zoom_n256.png
+.venv/bin/python duffing_parameter_space.py --gamma 0.300 --backend numba \
+    --omega 1.0 1.6 --G 0.21 0.30 --out results/zoom/duffing_gamma0.300_zoom_n256.png
+
+# step-size sensitivity check
+.venv/bin/python duffing_parameter_space.py --gamma 0.07 --n 128 --spc 200 --backend numba \
+    --out results/duffing_gamma0.070_n128_spc200.png
+.venv/bin/python duffing_parameter_space.py --gamma 0.07 --n 128 --spc 400 --backend numba \
+    --out results/duffing_gamma0.070_n128_spc400.png
+
+# derived products
+.venv/bin/python fd_estimators.py                                    # results/fd_estimators.csv
+.venv/bin/python fd_estimators.py --glob "results/zoom/*.npz" \
+    --out results/zoom/fd_estimators_zoom.csv
+.venv/bin/python make_summary.py                                     # results/summary.csv
+.venv/bin/python make_fig1.py                                        # figures/fig1_gamma_panels.png
+.venv/bin/python make_fig2.py                                        # figures/fig2_fd_vs_gamma.png
+```
+
+`run_remaining.sh` and `run_zoom.sh` are the drivers as actually run.
 Relevant flags: `--gamma --n --cycles --spc --omega --G --backend --boundary --fit-min-eps --out`.
 
 ## Layout
 
-| Path | What |
-|------|------|
-| `duffing_parameter_space.py` | sweep, classification, boundary extraction, box counting |
-| `fd_estimators.py` | FD under the headline + disclosure estimators, with window uncertainty |
-| `make_summary.py` | `results/summary.csv` |
-| `make_fig2.py` | `figures/fig2_fd_vs_gamma.png` |
-| `run_remaining.sh`, `run_zoom.sh` | the production sweeps as run |
-| `results/`, `results/zoom/` | PNG + NPZ per run, `summary.csv`, `fd_estimators.csv` |
-| `logs/` | stdout of every production run |
+| Path | What | Tracked |
+|------|------|---------|
+| `duffing_parameter_space.py` | sweep, classification, boundary extraction, box counting | yes |
+| `fd_estimators.py` | FD under the headline + disclosure estimators, with fit-window sensitivity | yes |
+| `make_summary.py` | builds `results/summary.csv` | yes |
+| `make_fig1.py`, `make_fig2.py` | build the two figures | yes |
+| `run_remaining.sh`, `run_zoom.sh` | the production sweeps as run | yes |
+| `figures/*.png` | the two figures | yes |
+| `results/*.csv` | `summary.csv`, `fd_estimators.csv` | yes |
+| `results/**/*.png` | per-run parameter-space maps | yes |
+| `results/**/*.npz` | per-run category grids | **no** — regenerate with the sweep commands above |
+| `logs/` | stdout of every production run | **no** — regenerated by the sweep commands |

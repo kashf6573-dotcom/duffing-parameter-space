@@ -1,3 +1,3 @@
-gamma,FD_headline,FD_unc,FD_fullrange,FD_two_sided,FD_one_sided_eps1,n_boundary_px,n_boundary_px_two_sided,n_windows
+gamma,FD_headline,FD_window_halfrange,FD_fullrange,FD_two_sided,FD_one_sided_eps1,n_boundary_px,n_boundary_px_two_sided,n_windows
 0.25,1.1247,0.0261,1.1341,1.2372,1.1019,638,1255,6
 0.3,1.2142,0.0388,1.2227,1.3109,1.1692,501,995,6

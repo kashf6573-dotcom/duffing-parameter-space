@@ -1,4 +1,7 @@
 .venv/
 __pycache__/
 *.pyc
-logs/*.pid
+
+# regenerable outputs (see README > Usage)
+*.npz
+logs/

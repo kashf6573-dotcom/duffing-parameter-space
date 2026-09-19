@@ -92,6 +92,10 @@ Residuals (`G` grid spacing is 0.00106, so one grid row = 0.0011):
 | 0.25  | 0.2026 | 0.2030 | −0.0004 |
 | 0.30  | 0.2344 | 0.2357 | −0.0013 |
 
+The 23% discount is not special to the unbiased case; see
+[Extension: static bias](#extension-static-bias), where it holds at every bias
+tested.
+
 rms residual 0.0026, max |residual| 0.0040 — about 2.5 and 3.8 grid rows. The
 residuals are not pure discretisation noise, but they are small, and the sign
 pattern (− + + − −) is what a mild convexity in `G_min(gamma)` would produce.
@@ -193,6 +197,73 @@ bit-identical at both 100 and 500 cycles, and the 96 x 96 smoke test matches on
 both backends. The fast path is ~8.3x faster at production depth (173 s vs ~20 min
 for a 256 x 256 / 500-cycle sweep) and is **off by default**; pass `--backend numba`.
 
+## Extension: static bias
+
+**This section is an exploration, not a reproduction of a published figure.** It is
+motivated by Hasan et al., *Extreme Mechanics Letters* (2025) and the
+static-plus-oscillating-field setting; no figure, number or claim below is taken
+from or compared against that paper. Everything above this point is the PRE 2023
+reproduction; everything here is additional work.
+
+Adding a constant bias to the drive,
+
+```
+u'' + gamma*u' - u + u^3 = F0 + G cos(Omega*tau)
+```
+
+tilts the double well. The equilibria are the three real roots of `u^3 - u = F0`,
+which exist while `|F0| < 2/(3*sqrt(3))`. The outer two are the wells and the
+middle one is the hilltop, so the protocol is carried over with two substitutions:
+the initial condition is the **left-well root** rather than `-1`, and a crossing is
+defined as passing the **middle root** rather than `u = 0`. The four-way
+classification on the last 50 of 500 cycles is otherwise unchanged, as is the RK4
+kernel apart from the `+ F0` term.
+
+At `F0 = 0` the added term is an exact `+0.0` and the roots come out exactly
+`(-1, 0, 1)`, so the biased code must reproduce the baseline sweep bit-for-bit.
+It does — `--selftest` checks the categories, `ever_crossed`, `xi_max` and `xi_min`
+against the unbiased kernels on a 48 x 48 grid, for both backends.
+
+256 x 256, `gamma = 0.07`, 500 cycles, `0.8 <= Omega <= 1.8`, `0.03 <= G <= 0.30`:
+
+| F0 | wells | hilltop | G_min | quasi-static `2/(3√3) − F0` | ratio | switching | reverting | vacillating | intra-well |
+|---:|-------|--------:|------:|----------------------------:|------:|----------:|----------:|------------:|-----------:|
+| 0.00 | −1.000, +1.000 | +0.000 | 0.0893 | 0.3849 | 0.232 |  6.76% | 6.80% | 15.78% | 70.66% |
+| 0.05 | −0.974, +1.024 | −0.050 | 0.0776 | 0.3349 | 0.232 | 13.70% | 5.82% | 15.63% | 64.85% |
+| 0.10 | −0.946, +1.047 | −0.101 | 0.0660 | 0.2849 | 0.232 | 21.42% | 4.92% | 15.05% | 58.61% |
+| 0.15 | −0.914, +1.068 | −0.154 | 0.0554 | 0.2349 | 0.236 | 28.85% | 4.57% | 13.44% | 53.14% |
+
+![Static bias](figures/fig3_static_bias.png)
+
+**The dynamic threshold is a fixed fraction of the quasi-static one.** `G_min`
+falls as the bias eats into the barrier, and it does so in proportion:
+
+```
+G_min = 0.2328 * (2/(3*sqrt(3)) - F0)
+```
+
+The four ratios span 0.2317–0.2359, a spread of 0.0042. In units of `G` that is at
+most 0.0009 — **less than the 0.00106 grid spacing**, so within this sweep the
+ratio is constant to the resolution available. The 23% figure quoted for the
+unbiased case in [Physical reading](#physical-reading) is not special to `F0 = 0`:
+the same discount applies to whatever barrier the bias leaves behind.
+
+This is a stronger statement than the data can fully support, and it is worth
+saying why. Four points over a range where the barrier changes by only 39% is a
+short lever arm, `G_min` is resolved to about one grid row, and nothing here tests
+`F0` approaching `2/(3*sqrt(3))`, where the barrier vanishes and the proportionality
+must break. Read it as "no departure from proportionality is detectable at this
+resolution", not as an established scaling law.
+
+**Bias converts reverting into switching.** The intra-well fraction falls from
+70.7% to 53.1% as the barrier shrinks, which is expected. Less obvious is where
+the freed pixels go: switching more than quadruples (6.8% -> 28.9%) while reverting
+*falls* (6.8% -> 4.6%) and vacillating is roughly flat. Tilting the potential does
+not merely make escape easier, it makes escape stickier — once the trajectory
+reaches the deeper right well, the bias holds it there instead of letting it return.
+In the maps this shows as the red region expanding into territory that is blue at
+`F0 = 0`.
+
 ## Usage
 
 ```bash
@@ -230,6 +301,14 @@ done
 .venv/bin/python make_fig2.py                                        # figures/fig2_fd_vs_gamma.png
 ```
 
+The static-bias extension (~3 min per F0):
+
+```bash
+.venv/bin/python extensions/duffing_static_bias.py --selftest
+.venv/bin/python extensions/duffing_static_bias.py --F0 0 0.05 0.10 0.15 --backend numba
+.venv/bin/python make_fig3.py                                        # figures/fig3_static_bias.png
+```
+
 `run_remaining.sh` and `run_zoom.sh` are the drivers as actually run.
 Relevant flags: `--gamma --n --cycles --spc --omega --G --backend --boundary --fit-min-eps --out`.
 
@@ -240,10 +319,11 @@ Relevant flags: `--gamma --n --cycles --spc --omega --G --backend --boundary --f
 | `duffing_parameter_space.py` | sweep, classification, boundary extraction, box counting | yes |
 | `fd_estimators.py` | FD under the headline + disclosure estimators, with fit-window sensitivity | yes |
 | `make_summary.py` | builds `results/summary.csv` | yes |
-| `make_fig1.py`, `make_fig2.py` | build the two figures | yes |
+| `make_fig1.py`, `make_fig2.py`, `make_fig3.py` | build the three figures | yes |
+| `extensions/duffing_static_bias.py` | static-bias exploration (not part of the reproduction) | yes |
 | `run_remaining.sh`, `run_zoom.sh` | the production sweeps as run | yes |
 | `figures/*.png` | the two figures | yes |
 | `results/*.csv` | `summary.csv`, `fd_estimators.csv` | yes |
 | `results/**/*.png` | per-run parameter-space maps | yes |
-| `results/**/*.npz` | per-run category grids | **no** — regenerate with the sweep commands above |
+| `results/**/*.npz` | per-run category grids, including `results/static_bias/` | **no** — regenerate with the sweep commands above |
 | `logs/` | stdout of every production run | **no** — regenerated by the sweep commands |
